@@ -1,0 +1,37 @@
+name: Synapse Final Packaging
+
+on: [push]
+
+jobs:
+  package-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # 1. Independent Build Step
+      # We must build the frontend here so the packager has something to grab
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+        env:
+          CI: false # Prevents warnings from failing the build
+
+      # 2. Run the Local Packager Action
+      - name: Run Packager
+        uses: ./.github/actions/deployment-packager
+
+      # 3. Upload the resulting Artifact
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-synapse-bundle
+          path: synapse-release.zip
+          retention-days: 1

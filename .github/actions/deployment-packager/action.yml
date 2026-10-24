@@ -1,0 +1,32 @@
+name: 'Standalone Deployment Packager'
+description: 'Gathers available backend and frontend files into a ZIP'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Prepare Deployment Folder
+      shell: bash
+      run: |
+        echo "Step 1: Creating a clean workspace..."
+        rm -rf deploy # Clean up old runs
+        mkdir -p deploy/frontend
+        
+        echo "Step 2: Copying Backend source (excluding node_modules)..."
+        if [ -d "backend" ]; then
+          cp -r backend/* deploy/
+          rm -rf deploy/node_modules
+        else
+          echo "Warning: Backend folder not found, skipping."
+        fi
+        
+        echo "Step 3: Copying Frontend production build..."
+        # Checking if the build exists. If not, we copy the source as a fallback
+        if [ -d "frontend/build" ]; then
+          cp -r frontend/build/* deploy/frontend/
+        else
+          echo "::error::Production build folder (frontend/build) is missing! Ensure the frontend build step executes successfully prior to packaging."
+          exit 1
+        fi
+        
+        echo "Step 4: Compressing into a ZIP file..."
+        zip -r synapse-release.zip deploy/
